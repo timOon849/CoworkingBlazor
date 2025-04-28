@@ -1,0 +1,437 @@
+﻿@* @page "/usersList"
+
+@using CoworkingBlazor.ApiRequest
+@using Microsoft.AspNetCore.Authorization
+@rendermode InteractiveServer
+
+<style>
+    /* Основные настройки */
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background-color: #f8f9fa;
+    }
+
+    /* Центрирование контента */
+    .centered-content {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+    }
+
+    /* Формы */
+    .form-control {
+        width: 100%;
+        padding: 0.5rem;
+        margin: 0.5rem 0;
+        border: 1px solid #ced4da;
+        border-radius: 0.75rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.2rem rgba(12, 105, 227, 0.25);
+    }
+
+    /* Кнопки */
+    .btn {
+        padding: 0.5rem 1.5rem;
+        border: none;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-primary {
+        background-color: #0d6efd;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #0b5ed7;
+    }
+
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #bd2130;
+    }
+
+    /* Таблицы */
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+    }
+
+    .table thead th {
+        background-color: #343a40;
+        color: white;
+        padding: 0.75rem;
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+
+    .table td, .table th {
+        border: 1px solid #dee2e6;
+        padding: 0.75rem;
+        text-align: center; /* Центрирование текста */
+    }
+
+    /* Заголовки */
+    h1 {
+        color: #212529;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 2rem;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        background-color: #e9ecef;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Валидация */
+    .text-danger {
+        color: #dc3545;
+        font-size: 0.875em;
+        margin-top: 0.25rem;
+    }
+
+    /* Аватарки */
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #007bff;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        margin-right: 10px;
+    }
+
+    /* Эффекты наведения */
+    .form-control:hover {
+        border-color: #adb5bd;
+    }
+
+    .form-control:disabled {
+        background-color: #e9ecef;
+        border-color: #ced4da;
+    }
+</style>
+
+<PageTitle>AdminPanel</PageTitle>
+
+<div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="col-md-8">
+        <!-- Форма добавления пользователя -->
+        <div class="mb-5">
+            <label class="form-label">Имя</label>
+            <input @bind="addUser .Name" class="form-control mb-3" />
+
+            <label class="form-label">О себе</label>
+            <input @bind="addUser.AboutMe" class="form-control mb-3" />
+
+            <label class="form-label">Почта</label>
+            <input @bind="addUser .Email" class="form-control mb-3" />
+
+            <label class="form-label">Пароль</label>
+            <input @bind="addUser .Password" class="form-control mb-3" />
+
+            <label class="form-label">Роль: админ</label>
+            <input type="checkbox" @bind="addUser .Admin" class="mb-3" />
+
+            <button @onclick="CreateUser " class="btn btn-primary w-100 mt-3">Добавить</button>
+        </div>
+
+        <!-- Таблица пользователей -->
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="alert-dark">
+                    <tr>
+                        <th>Аватар</th>
+                        <th>id_User</th>
+                        <th>Роль</th>
+                        <th>Имя</th>
+                        <th>О себе</th>
+                        <th>Email</th>
+                        <th>Пароль</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (users == null)
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center">Загрузка...</td>
+                        </tr>
+                    }
+                    else if (!users.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center">Нет пользователей</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var user in users)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="avatar">@user.name[0]</div>
+                                </td>
+                                <td>@user.id</td>
+                                <td>
+                                    @if (user.role == "Admin")
+                                    {
+                                        <span class="text-success">Админ</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-secondary">Пользователь</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (user.Edit)
+                                    {
+                                        <input @bind="@user.name" class="form-control" placeholder="Имя" pattern="[а-яА-Я]+" />
+                                    }
+                                    else
+                                    {
+                                        @user.name
+                                    }
+                                </td>
+                                <td>
+                                    @if (user.Edit)
+                                    {
+                                        <input @bind="@user.description" class="form-control" placeholder="О себе" />
+                                    }
+                                    else
+                                    {
+                                        @user.description
+                                    }
+                                </td>
+                                <td>
+                                    @if (user.Edit)
+                                    {
+                                        <input @bind="@user.email" class="form-control" placeholder="Почта" />
+                                    }
+                                    else
+                                    {
+                                        @user.email
+                                    }
+                                </td>
+                                <td>
+                                    @if (user.Edit)
+                                    {
+                                        <input @bind="@user.Password" class="form-control" placeholder="Пароль" />
+                                    }
+                                    else
+                                    {
+                                        @user.Password
+                                    }
+                                </td>
+                                <td>
+                                    @if (user.Edit)
+                                    {
+                                        <button @onclick="() => SaveUser (user)" class="btn btn-success me-2">Сохранить</button>
+                                        <button @onclick="() => CancelUser (user)" class="btn btn-secondary">Отмена</button>
+                                    }
+                                    else
+                                    {
+                                        <button @onclick="() => EditUser (user)" class="btn btn-primary me-2">Изменить</button>
+                                        <button @onclick="() => DeleteUser (user)" class="btn btn-danger me-2">Удалить</button>
+                                        @if (user.role == "User")
+                                        {
+                                            <button @onclick="() => MakeAdmin(user)" class="btn btn-warning me-2">Сделать админом</button>
+                                        }
+                                        else
+                                        {
+                                            <button @onclick="() => MakeUser (user)" class="btn btn-info">Сделать пользователем</button>
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+@code {
+    private List<UserDataShort> users;
+
+    AddUser addUser = new AddUser();
+    UserDataShort UserData = new UserDataShort();
+    private bool isInitialized;
+    private string errorMessage;
+    public bool admin;
+
+
+    [Inject] private ApiRequestService ApiRequest { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            users = await ApiRequest.GetUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Ошибка при загрузке пользователей: {ex.Message}";
+            Console.WriteLine(errorMessage);
+        }
+        finally
+        {
+            isInitialized = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GetUsers()
+    {
+        var userData = await ApiRequest.GetUsersAsync();
+        users = userData ?? new List<UserDataShort>();
+
+        StateHasChanged();
+    }
+
+    void EditUser(UserDataShort user)
+    {
+        user.Edit = true;
+    }
+
+    async void DeleteUser(UserDataShort user)
+    {
+        ApiRequest.DeleteUserAsync(user.id);
+        await GetUsers();
+    }
+
+    async void MakeAdmin(UserDataShort user)
+    {
+        if (!string.IsNullOrWhiteSpace(user.name) &&
+            !string.IsNullOrWhiteSpace(user.description) &&
+            !string.IsNullOrWhiteSpace(user.email) &&
+            !string.IsNullOrWhiteSpace(user.Password))
+        {
+            UserProd userProd = new UserProd
+                {
+                    id_User = user.id,
+                    isAdmin = true,
+                    Name = user.name,
+                    AboutMe = user.description,
+                    Email = user.email,
+                    Password = user.Password
+                };
+
+            ApiRequest.EditUserAsync(userProd);
+        }
+        await GetUsers();
+    }
+
+    async void MakeUser(UserDataShort user)
+    {
+        if (!string.IsNullOrWhiteSpace(user.name) &&
+            !string.IsNullOrWhiteSpace(user.description) &&
+            !string.IsNullOrWhiteSpace(user.email) &&
+            !string.IsNullOrWhiteSpace(user.Password))
+        {
+            UserProd userProd = new UserProd
+                {
+                    id_User = user.id,
+                    isAdmin = false,
+                    Name = user.name,
+                    AboutMe = user.description,
+                    Email = user.email,
+                    Password = user.Password
+                };
+
+            ApiRequest.EditUserAsync(userProd);
+        }
+        await GetUsers();
+    }
+
+    void CancelUser(UserDataShort user) => user.Edit = false;
+
+    void SaveUser(UserDataShort user)
+    {
+
+        if (!string.IsNullOrWhiteSpace(user.name) &&
+            !string.IsNullOrWhiteSpace(user.description) &&
+            !string.IsNullOrWhiteSpace(user.email) &&
+            !string.IsNullOrWhiteSpace(user.Password))
+        {
+            if (user.role == "Admin")
+            {
+                admin = true;
+            }
+            else
+            {
+                admin = false;
+            }
+            UserProd userProd = new UserProd
+                {
+                    id_User = user.id,
+                    isAdmin = admin,
+                    Name = user.name,
+                    AboutMe = user.description,
+                    Email = user.email,
+                    Password = user.Password
+                };
+
+            ApiRequest.EditUserAsync(userProd);
+        }
+        user.Edit = false;
+        GetUsers();
+    }
+
+    private void CreateUser()
+    {
+        ApiRequest.CreateUserLoginAsync(addUser);
+        GetUsers();
+    }
+    public class UserDataShort
+    {
+        public int id { get; set; }
+        public string role { get; set; }
+        public string name { get; set; }
+        public string description { get; set; }
+        public string email { get; set; }
+        public string Password { get; set; }
+        public bool Edit { get; set; }
+
+    }
+    public class UserProd
+    {
+        public int id_User { get; set; }
+        public bool isAdmin { get; set; }
+        public string Name { get; set; }
+        public string AboutMe { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+    public class AddUser
+    {
+        public string Name { get; set; }
+        public string AboutMe { get; set; }
+        public bool Admin { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+} *@
